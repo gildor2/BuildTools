@@ -76,7 +76,9 @@ function AddPath()
 	# Unix has multiple items separated with ":" which is used as drive separator on Windows systems
 #	local p="/cygdrive/${1//:/}"		# d:/path -> /cygdrive/d/path	- CygWin
 	local p="/${1//:/}"					# d:/path -> /d/path			- MSys
-	PATH="$PATH:$p"
+	# Add new path before previously defined ones, so for example if older path has "link.exe" (part of Git),
+	# we'll use one from Visual Studio (i.e. the correct one)
+	PATH="$p:$PATH"
 }
 
 
@@ -93,6 +95,11 @@ function PrepareVC()
 	else
 		progs="c:/program files"
 	fi
+	# When running 64-bit bash on Windows, it will use 64-bit Program Files by default. However,
+	# Visual Studio is always located in x86 directory, so switch to using it.
+	if [ -d "$progs (x86)" ]; then
+		progs="$progs (x86)"
+	fi
 
 	# ---------- Find Visual Studio ----------
 
@@ -108,7 +115,7 @@ function PrepareVC()
 	CheckVC "" 15 2017	# 15.0
 
 	if [ ! "$workpath" ]; then
-		echo -e "${hgl};31mERROR: Visual C++ is not found.${norm}"
+		echo -e "${hgl};31mERROR: Visual C++ was not found.${norm}"
 		exit 1
 	fi
 
@@ -139,7 +146,9 @@ function PrepareVC()
 			AddPath "$workpath/bin"
 			AddPath "$ide"
 		fi
-		INCLUDE="$workpath/INCLUDE;$workpath/MFC/INCLUDE;$workpath/PlatformSDK/Include;$workpath/PlatformSDK/Include/prerelease"
+		INCLUDE="$workpath/INCLUDE"
+		INCLUDE="$INCLUDE;$workpath/MFC/INCLUDE;$workpath/PlatformSDK/Include;$workpath/PlatformSDK/Include/prerelease" #?? may be not needed to include this
+		#?? Again, "PlatformSDK" is below - it seems that was for VS 2003
 		if [ -z "$amd64" ]; then
 			LIB="$workpath/LIB;$workpath/PlatformSDK/LIB"
 		else
