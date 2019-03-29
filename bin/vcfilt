@@ -1,5 +1,14 @@
 #!/usr/bin/perl -w
 
+# Visual C++ compiler (CL) output colorizer.
+# It is intended to highlight error and warning messages from compiler to make them more noticeable.
+# The script works as output filter, however it starts compiler itself, so usual use is
+# `perl vcfilt <command line to run>`.
+
+# Created by Konstantin Nosov (Gildor)
+# https://github.com/gildor2/BuildTools
+# Public Domain (www.unlicense.org)
+
 # Changes:
 # 20.09.2014
 # - removed 'nice' call - probably not needed anymore (previously used to give priority to this
@@ -8,6 +17,7 @@
 # - do not use colorizing when not attached to terminal (redirected to a file)
 # 14.10.2011
 # - fixed strange bug with Win7 + new CygWin - pipe were not created when arguments are quoted
+
 
 sub color {
 	my ($line, $color) = @_;

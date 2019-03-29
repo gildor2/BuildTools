@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Visual C++ compiler (CL) helper script.
+# The main purpose of this is to locate the compiler, setup environment and execute it with provided parameters.
+# It has a possibility to build makefiles using NMAKE or JOM backend, or compile (and possibly link) separate
+# C/C++ files for small applications. To get list of possible options run vc32tools without arguments.
+
+# Created by Konstantin Nosov (Gildor)
+# https://github.com/gildor2/BuildTools
+# Public Domain (www.unlicense.org)
+
+
 # Color constants
 norm="\\033[0m"
 hgl="\\033[1"
