@@ -123,6 +123,7 @@ function PrepareVC()
 	CheckVC "$progs/microsoft visual studio 12.0/vc" 12 2013	# 12.0
 	CheckVC "$progs/microsoft visual studio 14.0/vc" 14 2015	# 14.0
 	CheckVC "" 15 2017	# 15.0
+	CheckVC "" 16 2019	# 15.0
 
 	if [ ! "$workpath" ]; then
 		echo -e "${hgl};31mERROR: Visual C++ was not found.${norm}"
@@ -143,8 +144,9 @@ function PrepareVC()
 			AddPath "$vs_compiler/bin/Hostx64/x64"
 			LIB="$vs_compiler/lib/x64"
 		else
-			AddPath "$vs_compiler/bin/Hostx64/x86"
+			# Note: AddPath will prepend PATH, so we're adding x64 before x86, however x86 will be first for lookup
 			AddPath "$vs_compiler/bin/Hostx64/x64" # pick dlls from another target's toolset for mspdbcore.dll
+			AddPath "$vs_compiler/bin/Hostx64/x86"
 			LIB="$vs_compiler/lib/x86"
 		fi
 		INCLUDE="$vs_compiler/include"
