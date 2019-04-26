@@ -123,7 +123,7 @@ function PrepareVC()
 	CheckVC "$progs/microsoft visual studio 12.0/vc" 12 2013	# 12.0
 	CheckVC "$progs/microsoft visual studio 14.0/vc" 14 2015	# 14.0
 	CheckVC "" 15 2017	# 15.0
-	CheckVC "" 16 2019	# 15.0
+	CheckVC "" 16 2019	# 16.0
 
 	if [ ! "$workpath" ]; then
 		echo -e "${hgl};31mERROR: Visual C++ was not found.${norm}"
@@ -305,19 +305,33 @@ function Link()
 function Usage()
 {
 cat<<EOF
-Usage: vc32tools [--version=ver] [--64] [--compile <options>] [--make <makefile[.mak]>] [--check] [--help]
-Options:
-  --version=ver force VC++ version to use (version option should go first)
-  --64          use 64-bit compiler
-  --compile     compile c/cpp source file(s)
-                extra options:
-                --debug            create pdb file
-                /link <options>    pass options to linker
-  --link        link source files
-  --make        build specified makefile
-  --check       verify availability of VC++
-  --help        display compiler help pages
-  --nmake       force NMAKE build, ignore JOM presence
+Usage:
+  vc32tools [--version=ver] [--64] [--compile <options>] [--make <makefile[.mak]>] [--check] [--help]
+
+Compiler secection options:
+  --version=<ver>   minimal Visual C++ version to use (version option must go first)
+  --64              use 64-bit compiler
+
+  <ver> is VC year number or its version. Example: For VS2015 use --version=2015 or 14.
+
+Compiling source code:
+  --compile         compile c/cpp source file(s)
+
+Extra options for compile:
+  <filename>        file(s) to compile
+  --debug           create pdb file
+  /link <options>   pass all following options directly to linker
+
+Executing makefile:
+  --make            build specified makefile
+  --nmake           force NMAKE build, do not use JOM (should go before --make)
+
+Calling linker:
+  --link            link source files
+
+Other options:
+  --check           verify availability of VC++
+  --help            display compiler help pages
 EOF
 }
 
