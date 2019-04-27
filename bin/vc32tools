@@ -170,10 +170,10 @@ function PrepareVC()
 
 	# ---------- Find Platform SDK ----------
 
-	#!! TODO: reverse order of these SDK dirs, remove 6.0A
-	CheckSDK "C:/Program Files/Microsoft SDKs/Windows/v6.0A"	# NOTE: not in "Program Files (x86)"
-	CheckSDK "$progs/Microsoft SDKs/Windows/v7.0A"
 	CheckSDK "$progs/Microsoft SDKs/Windows/v7.1"
+	CheckSDK "$progs/Microsoft SDKs/Windows/v7.0A"
+	CheckSDK "C:/Program Files/Microsoft SDKs/Windows/v6.0A"	# NOTE: not in "Program Files (x86)"
+
 	if [ "$sdkpath" ]; then
 		INCLUDE="$INCLUDE;$sdkpath/Include"
 		if [ -z "$amd64" ]; then
