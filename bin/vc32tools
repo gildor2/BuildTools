@@ -15,22 +15,15 @@ norm="\\033[0m"
 hgl="\\033[1"
 force_nmake=""
 
-# Usage: CheckVC <path> <vc_version> <vc_year>
+# Usage:
+#	CheckVC <path> <vc_version> <vc_year>
+# Output:
+#	$workpath
+#	$found_vc
+#	$found_vc_year
+
 function CheckVC()
 {
-	if [ "$workpath" ]; then
-		return  # already found
-	fi
-	# compare supplied version with required
-	if [ "$vc_ver" ]; then
-		if [ "$vc_ver" -gt 2000 ]; then
-			# this is year-based version
-			[ "$vc_ver" -gt "$3" ] && return
-		else
-			[ "$vc_ver" -gt "$2" ] && return
-		fi
-	fi
-
 	platform="32 bit"
 	[ "$amd64" ] && platform="64 bit"
 
@@ -49,6 +42,7 @@ function CheckVC()
 		[ -d "$vs_compiler" ] || return
 		workpath="$base_path/VC"
 		found_vc=$2
+		found_vc_year=$3
 		echo "Using $display_name [$platform] found at \"$base_path\" ..."
 	else
 		# pre-VS2017 path
@@ -60,6 +54,7 @@ function CheckVC()
 			fi
 			workpath="$vspath"
 			found_vc=$2
+			found_vc_year=$3
 			echo "Using Visual C++ $2 ($3) [$platform] found at \"$vspath\" ..."
 		fi
 	fi
@@ -92,6 +87,64 @@ function AddPath()
 }
 
 
+# Parameters:
+# $1 = version, which is either version (6, 7, ...), year (2008, 2010, ...) or "latest"
+function LocateSuitableVC()
+{
+	local VC=(
+		# Format: <path-to-vs> <version> <year>
+		"$progs/microsoft visual studio/vc98" 6 0 			# 6.0
+		"$progs/microsoft visual studio .net/vc7" 7 0 		# 7.0
+		"$progs/microsoft visual studio .net 2003/vc7" 7 0	# 7.1
+		"$progs/microsoft visual studio 8/vc" 8 2005		# 8.0
+		"$progs/microsoft visual studio 9.0/vc" 9 2008		# 9.0
+		"$progs/microsoft visual studio 10.0/vc" 10 2010	# 10.0
+		"$progs/microsoft visual studio 11.0/vc" 11 2012	# 11.0
+		"$progs/microsoft visual studio 12.0/vc" 12 2013	# 12.0
+		"$progs/microsoft visual studio 14.0/vc" 14 2015	# 14.0
+		"" 15 2017	# 15.0
+		"" 16 2019	# 16.0
+	)
+
+	if [ "$1" == "latest" ]; then
+		# Find newest VC, should iterate array in reverse order
+		local i=${#VC[@]}
+		while [ $i -gt 0 ]; do
+			((i=$i-3))
+			local vc_path="${VC[$i]}"
+			local vc_num="${VC[$i+1]}"
+			local vc_year="${VC[$i+2]}"
+#			echo "($vc_path) $vc_num $vc_year"
+
+			CheckVC "$vc_path" $vc_num $vc_year
+			[ "$workpath" ] && break
+		done
+	else
+		local i=0
+		while [ $i -lt ${#VC[@]} ]; do
+			local vc_path="${VC[$i]}"
+			local vc_num="${VC[$i+1]}"
+			local vc_year="${VC[$i+2]}"
+			((i=$i+3))
+#			echo "($vc_path) $vc_num $vc_year"
+
+			if [ "$1" ]; then
+				# "continue" if version is not large enough
+				if [ "$1" -gt 2000 ]; then
+					# this is year-based version
+					[ "$1" -gt "$vc_year" ] && continue
+				else
+					[ "$1" -gt "$vc_num" ] && continue
+				fi
+			fi
+
+			CheckVC "$vc_path" $vc_num $vc_year
+			[ "$workpath" ] && break
+		done
+	fi
+}
+
+
 function PrepareVC()
 {
 	if [ "$workpath" ]; then
@@ -113,17 +166,7 @@ function PrepareVC()
 
 	# ---------- Find Visual Studio ----------
 
-	CheckVC "$progs/microsoft visual studio/vc98" 6 0			# 6.0
-	CheckVC "$progs/microsoft visual studio .net/vc7" 7 0		# 7.0
-	CheckVC "$progs/microsoft visual studio .net 2003/vc7" 7 0	# 7.1
-	CheckVC "$progs/microsoft visual studio 8/vc" 8 2005		# 8.0
-	CheckVC "$progs/microsoft visual studio 9.0/vc" 9 2008		# 9.0
-	CheckVC "$progs/microsoft visual studio 10.0/vc" 10 2010	# 10.0
-	CheckVC "$progs/microsoft visual studio 11.0/vc" 11 2012	# 11.0
-	CheckVC "$progs/microsoft visual studio 12.0/vc" 12 2013	# 12.0
-	CheckVC "$progs/microsoft visual studio 14.0/vc" 14 2015	# 14.0
-	CheckVC "" 15 2017	# 15.0
-	CheckVC "" 16 2019	# 16.0
+	LocateSuitableVC $vc_ver
 
 	if [ ! "$workpath" ]; then
 		echo -e "${hgl};31mERROR: Visual C++ was not found.${norm}"
@@ -183,6 +226,8 @@ function PrepareVC()
 		fi
 		AddPath "$sdkpath/bin"			# VC9+ has no RC.exe in its bin directory, using it from the SDK
 	fi
+
+	# ---------- CRT for modern C++ compilers ----------
 
 	if [ -z "$sdkpath" ] || [ $found_vc -ge 14 ]; then
 		# VS starting with 2015 version doesn't have CRT, it uses UCRT from Windows Kits/10
@@ -309,10 +354,12 @@ Usage:
   vc32tools [--version=ver] [--64] [--compile <options>] [--make <makefile[.mak]>] [--check] [--help]
 
 Compiler secection options:
-  --version=<ver>   minimal Visual C++ version to use (version option must go first)
-  --64              use 64-bit compiler
+  --version=<Ver>   minimal Visual C++ version to use (version option must go first)
+  --64              use 64-bit compiler (by default 32-bit compiler is used)
 
-  <ver> is VC year number or its version. Example: For VS2015 use --version=2015 or 14.
+  <Ver> is VC year number or its version. Example: For VS2015 use --version=2015 or 14.
+  Use "--version=latest" to use most recent version available on the system. When not specified,
+  the first available (i.e. oldest) compiler version will be used.
 
 Compiling source code:
   --compile         compile c/cpp source file(s)
