@@ -240,7 +240,7 @@ function Make()
 	# Also verify this CL option: http://msdn.microsoft.com/en-us/library/bb385193(v=vs.120).aspx
 	# (requires passing multiple .cpp files to CL in signle command line)
 	#?? jom is not compatible with VS2013 - has problems with simultaneous access from multiple CL.exe to single pdb file
-	if [ -f "${0%/*}/jom.exe" ] && [ -z "$force_nmake" ]; then
+	if [ -f "${BASH_SOURCE%/*}/jom.exe" ] && [ -z "$force_nmake" ]; then
 		make=jom
 	else
 		make=nmake
@@ -336,7 +336,7 @@ EOF
 }
 
 
-# NOTE: this will tryt to parse command even when called via "source <filename>", i.e. included
+# NOTE: this will try to parse command even when called via "source <filename>", i.e. included
 while [ "1" ]; do
 
 	case "$1" in
@@ -362,7 +362,7 @@ while [ "1" ]; do
 		--link)
 			shift
 			Link $*
-			exit
+			break
 			;;
 		--make)
 			shift
@@ -370,12 +370,12 @@ while [ "1" ]; do
 			;;
 		--check)
 			PrepareVC
-			exit
+			break
 			;;
 		--help)
 			PrepareVC
 			cl -?
-			exit
+			exit 0
 			;;
 		"")		# no commands
 			Usage
