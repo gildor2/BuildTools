@@ -10,17 +10,31 @@
 # Public Domain (https://unlicense.org/)
 
 
+# Some references for VS2017+ compiler location.
+# Article: https://devblogs.microsoft.com/cppblog/finding-the-visual-c-compiler-tools-in-visual-studio-2017/.
+# Vswhere does not enumerate toolsets: https://github.com/Microsoft/vswhere/issues/151
+# Useful batch files:
+# "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
+# - top-level batch, calls other, like vsdevcmd.bat, core\vsdevcmd_start.bat, parse_cmd.bat
+# "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\vsdevcmd\ext\vcvars.bat"
+# - final batch, selected toolset version is in __VCVARS_VERSION env variable.
+
+
 # Color constants
 norm="\\033[0m"
 hgl="\\033[1"
 force_nmake=""
 
-# Usage:
-#	CheckVC <path> <vc_version> <vc_year>
+# Usage: CheckVC [params...]
+#	$1 = path - typical path to Visual Studio installation, not used since VC2017
+#	$2 = vc_version - classic version number
+#	$3 = vc_year - "year" version
+#	$4 = toolset - toolset version, used when multiple C++ toolsets are installed for single VS
 # Output:
-#	$workpath
-#	$found_vc
-#	$found_vc_year
+#	$workpath - base path to VS installation
+#	$found_vc - 'classic' version of VS which is located
+#	$found_vc_year - 'year' version
+#	$vs_compiler - path to compiler, used for VS2017+
 
 function CheckVC()
 {
@@ -35,15 +49,21 @@ function CheckVC()
 		version_filter="-version [$2.0,$(($2+1)).0)"
 		display_name=`"$vswhere" $version_filter -property displayName`
 		base_path=`"$vswhere" $version_filter -property installationPath`
-		version_file="$base_path/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt"
-		[ -f "$version_file" ] || return
+		[ "$base_path" ] || return
+		# get version file for specified toolset
+		version_file="$base_path/VC/Auxiliary/Build/Microsoft.VCToolsVersion.v$4.default.txt"
+		if ! [ -f "$version_file" ]; then
+			# get any toolset (most likely that will select toolset for current compiler)
+			version_file="$base_path/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt"
+			[ -f "$version_file" ] || return
+		fi
 		vs_subver=`cat "$version_file"`
 		vs_compiler="$base_path/VC/Tools/MSVC/$vs_subver"
 		[ -d "$vs_compiler" ] || return
 		workpath="$base_path/VC"
 		found_vc=$2
 		found_vc_year=$3
-		echo "Using $display_name [$platform] found at \"$base_path\" ..."
+		echo "$display_name toolset $4 ($vs_subver) [$platform] found at \"$base_path\" ..."
 	else
 		# pre-VS2017 path
 		# verify presence
@@ -92,41 +112,44 @@ function AddPath()
 function LocateSuitableVC()
 {
 	local VC=(
-		# Format: <path-to-vs> <version> <year>
-		"$progs/microsoft visual studio/vc98" 6 0 			# 6.0
-		"$progs/microsoft visual studio .net/vc7" 7 0 		# 7.0
-		"$progs/microsoft visual studio .net 2003/vc7" 7 0	# 7.1
-		"$progs/microsoft visual studio 8/vc" 8 2005		# 8.0
-		"$progs/microsoft visual studio 9.0/vc" 9 2008		# 9.0
-		"$progs/microsoft visual studio 10.0/vc" 10 2010	# 10.0
-		"$progs/microsoft visual studio 11.0/vc" 11 2012	# 11.0
-		"$progs/microsoft visual studio 12.0/vc" 12 2013	# 12.0
-		"$progs/microsoft visual studio 14.0/vc" 14 2015	# 14.0
-		"" 15 2017	# 15.0
-		"" 16 2019	# 16.0
+		# Format: <path-to-vs> <version> <year> <toolset>
+		"$progs/microsoft visual studio/vc98"    6 0 0			# 6.0
+		"$progs/microsoft visual studio .net/vc7" 7 2002 0		# 7.0
+		"$progs/microsoft visual studio .net 2003/vc7" 7 2003 0	# 7.1
+		"$progs/microsoft visual studio 8/vc"    8  2005 0		# 8.0
+		"$progs/microsoft visual studio 9.0/vc"  9  2008 90		# 9.0
+		"$progs/microsoft visual studio 10.0/vc" 10 2010 100	# 10.0
+		"$progs/microsoft visual studio 11.0/vc" 11 2012 0		# 11.0
+		"$progs/microsoft visual studio 12.0/vc" 12 2013 120	# 12.0
+		"$progs/microsoft visual studio 14.0/vc" 14 2015 140	# 14.0
+		"" 15 2017 141		# 15.0
+		"" 16 2019 142		# 16.0
 	)
 
 	if [ "$1" == "latest" ]; then
 		# Find newest VC, should iterate array in reverse order
 		local i=${#VC[@]}
 		while [ $i -gt 0 ]; do
-			((i=$i-3))
+			((i=$i-4))
 			local vc_path="${VC[$i]}"
 			local vc_num="${VC[$i+1]}"
 			local vc_year="${VC[$i+2]}"
-#			echo "($vc_path) $vc_num $vc_year"
+			local vc_tool="${VC[$i+3]}"
+#			echo "($vc_path) $vc_num $vc_year toolset=$vc_tool"
 
-			CheckVC "$vc_path" $vc_num $vc_year
+			CheckVC "$vc_path" $vc_num $vc_year $vc_tool
 			[ "$workpath" ] && break
 		done
 	else
 		local i=0
+		toolset=0
 		while [ $i -lt ${#VC[@]} ]; do
 			local vc_path="${VC[$i]}"
 			local vc_num="${VC[$i+1]}"
 			local vc_year="${VC[$i+2]}"
-			((i=$i+3))
-#			echo "($vc_path) $vc_num $vc_year"
+			local vc_tool="${VC[$i+3]}"
+			((i=$i+4))
+#			echo "($vc_path) $vc_num $vc_year toolset=$vc_tool"
 
 			if [ "$1" ]; then
 				# "continue" if version is not large enough
@@ -137,8 +160,9 @@ function LocateSuitableVC()
 					[ "$1" -gt "$vc_num" ] && continue
 				fi
 			fi
+			[ $toolset == 0 ] && toolset=$vc_tool
 
-			CheckVC "$vc_path" $vc_num $vc_year
+			CheckVC "$vc_path" $vc_num $vc_year $toolset
 			[ "$workpath" ] && break
 		done
 	fi
