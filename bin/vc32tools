@@ -275,6 +275,7 @@ function PrepareVC()
 			LIB="$LIB;$win10sdk/Lib/$win10sdk_ver/ucrt/$lib_subdir;$win10sdk/Lib/$win10sdk_ver/um/$lib_subdir"
 			# include SDK bin directory (required for rc.exe)
 			AddPath "$win10sdk/bin/$lib_subdir"
+			AddPath "$win10sdk/bin/$win10sdk_ver/$lib_subdir"
 		else
 			echo "ERROR: $win10sdk not found"
 			exit 1
@@ -314,12 +315,9 @@ function Make()
 	else
 		make=nmake
 	fi
-	echo "CALLING $make $mkfile $*"
-	#?? is CFG used somewhere ?
+	echo "$make $mkfile $*"
 	export TIMEFORMAT="Build time: %1R sec"
-	#!! check: perhaps "CFG=" option is not needed; when needed, could add parameter
-	#!! for this script, which will select a confuguration name
-	time vcfilt $make -nologo -s -f $mkfile CFG="$makefile - Win32 Release" $*
+	time vcfilt $make -nologo -s -f $mkfile $*
 	exit ${PIPESTATUS[0]}
 }
 
