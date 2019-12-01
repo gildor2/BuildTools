@@ -318,7 +318,7 @@ function Make()
 	echo "$make $mkfile $*"
 	export TIMEFORMAT="Build time: %1R sec"
 	time vcfilt $make -nologo -s -f $mkfile $*
-	exit ${PIPESTATUS[0]}
+	return ${PIPESTATUS[0]}			# use return instead of exit
 }
 
 
@@ -359,7 +359,7 @@ function Compile()
 #	echo "CPP: <$cppopt> LNK: <$linkopt>"
 #	linker option "-merge:.rdata=.data" will merge sections, but produce warnings
 	vcfilt cl -nologo -O1 -MD $cppopt $filename -link -filealign:512 $linkopt
-	exit ${PIPESTATUS[0]}
+	return ${PIPESTATUS[0]}			# use return instead of exit
 }
 
 
@@ -427,15 +427,17 @@ while [ "1" ]; do
 		--compile)
 			shift
 			Compile $*
+			exit
 			;;
 		--link)
 			shift
 			Link $*
-			break
+			exit
 			;;
 		--make)
 			shift
 			Make $*
+			exit
 			;;
 		--check)
 			PrepareVC
@@ -451,7 +453,7 @@ while [ "1" ]; do
 			exit 0
 			;;
 		*)
-			echo "invalid vc32tools command: $1"
+			echo "Invalid vc32tools option $1"
 			exit 1
 			;;
 	esac
