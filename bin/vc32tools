@@ -257,15 +257,16 @@ function PrepareVC()
 		# VS starting with 2015 version doesn't have CRT, it uses UCRT from Windows Kits/10
 		win10sdk="$progs/Windows Kits/10"
 		if [ -d "$win10sdk" ]; then
-			olddir="$PWD"
-			cd "$win10sdk/Include"
+#			olddir="$PWD"
+#			cd "$win10sdk/Include"
 			win10sdk_ver="0.0.0.0"
-			for d in *; do
+#			for d in "$win10sdk/Include/*"; do - changing dir + return to olddir will not work correctly for symlink'ed current directory
+			for d in `ls "$win10sdk/Include"`; do	# we're using 'ls ...' here because simple "path_with_spaces/*" will not work
 				if [[ $d > $win10sdk_ver ]]; then
 					win10sdk_ver=$d
 				fi
 			done
-			cd "$olddir"
+#			cd "$olddir"
 			INCLUDE="$INCLUDE;$win10sdk/Include/$win10sdk_ver/ucrt;$win10sdk/Include/$win10sdk_ver/um;$win10sdk/Include/$win10sdk_ver/shared"
 			if [ -z "$amd64" ]; then
 				lib_subdir=x86
