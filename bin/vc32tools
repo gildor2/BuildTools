@@ -290,6 +290,21 @@ function PrepareVC()
 }
 
 
+# Generate sound event using Visual Studio settings
+function VSEvent()
+{
+	Sound=$1
+	# We're using PowerShell to access registry and play sounds
+	{
+		cat <<EOF
+\$key = 'HKCU:\\AppEvents\\Schemes\\Apps\\devenv\\$Sound\.current';
+\$snd = (Get-ItemProperty -Path \$key -ErrorAction SilentlyContinue).'(default)'
+if ("\$snd" -ne "") { (New-Object Media.SoundPlayer \$snd).PlaySync(); }
+EOF
+	} | powershell -noprofile -noninteractive -command '$input | iex'
+}
+
+
 function Make()
 {
 	local line
@@ -319,7 +334,13 @@ function Make()
 	echo "$make $mkfile $*"
 	export TIMEFORMAT="Build time: %1R sec"
 	time vcfilt $make -nologo -s -f $mkfile $*
-	return ${PIPESTATUS[0]}			# use return instead of exit
+	result=${PIPESTATUS[0]}
+	if [ $result -eq 0 ]; then
+		VSEvent "VS_BuildSucceeded"
+	else
+		VSEvent "VS_BuildFailed"
+	fi
+	return $result			# use return instead of exit
 }
 
 
