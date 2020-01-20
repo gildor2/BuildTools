@@ -294,14 +294,15 @@ function PrepareVC()
 function VSEvent()
 {
 	Sound=$1
-	# We're using PowerShell to access registry and play sounds
+	# We're using PowerShell to access registry and play sounds.
+	# Note: using '&' at the end to issue sound asynchronously, so script will not wait till sound completed.
 	{
 		cat <<EOF
 \$key = 'HKCU:\\AppEvents\\Schemes\\Apps\\devenv\\$Sound\.current';
 \$snd = (Get-ItemProperty -Path \$key -ErrorAction SilentlyContinue).'(default)'
 if ("\$snd" -ne "") { (New-Object Media.SoundPlayer \$snd).PlaySync(); }
 EOF
-	} | powershell -noprofile -noninteractive -command '$input | iex'
+	} | powershell -noprofile -noninteractive -command '$input | iex' &
 }
 
 
