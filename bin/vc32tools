@@ -124,6 +124,7 @@ function LocateSuitableVC()
 		"$progs/microsoft visual studio 14.0/vc" 14 2015 140	# 14.0
 		"" 15 2017 141		# 15.0
 		"" 16 2019 142		# 16.0
+		"" 17 2022 143		# 17.0
 	)
 
 	if [ "$1" == "latest" ]; then
